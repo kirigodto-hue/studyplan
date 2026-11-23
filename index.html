@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyPlan Cloud - ปฏิทินส่งงาน & คลังรูปสำคัญ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Prompt', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- หน้าจอ Login -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl font-bold mb-4">
+        SP
+      </div>
+      <h1 class="text-2xl font-bold text-slate-900">StudyPlan Cloud</h1>
+      <p class="text-sm text-slate-500 mt-2">
+        ล็อกอินด้วย Google เพื่อซิงก์กำหนดส่งงาน ตารางเรียน และรูปสำคัญข้ามมือถือกับคอมพิวเตอร์
+      </p>
+      <button id="googleLoginBtn"
+        class="mt-6 w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition flex items-center justify-center gap-2 cursor-pointer">
+        <span>เข้าสู่ระบบด้วย Google</span>
+      </button>
+      <p id="authError" class="text-xs text-rose-600 mt-3 hidden"></p>
+    </div>
+  </div>
+
+  <!-- หน้าแอปหลัก (แสดงหลัง Login สำเร็จ) -->
+  <div id="appScreen" class="hidden max-w-6xl mx-auto px-4 py-6">
+    <!-- Top Bar -->
+    <header class="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">SP</div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900">StudyPlan Cloud</h1>
+          <p id="userEmailLabel" class="text-xs text-slate-500"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="tabCalendarBtn" class="px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white cursor-pointer">
+          ปฏิทินส่งงาน
+        </button>
+        <button id="tabGalleryBtn" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+          ตารางเรียน & รูปสำคัญ
+        </button>
+        <button id="logoutBtn" class="px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 cursor-pointer">
+          ออกจากระบบ
+        </button>
+      </div>
+    </header>
+
+    <!-- แท็บ 1: ปฏิทินกำหนดส่งงาน -->
+    <section id="calendarSection" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="monthTitle" class="text-lg font-bold text-slate-900"></h2>
+          <div class="flex items-center gap-2">
+            <button id="prevMonthBtn" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm cursor-pointer">ก่อนหน้า</button>
+            <button id="todayBtn" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-medium cursor-pointer">วันนี้</button>
+            <button id="nextMonthBtn" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm cursor-pointer">ถัดไป</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-7 text-center text-xs font-medium text-slate-400 pb-2">
+          <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
+        </div>
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
+      </div>
+
+      <!-- รายการงานของวันที่เลือก -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5">
+        <h3 id="selectedDateLabel" class="font-bold text-slate-900 mb-3"></h3>
+
+        <form id="taskForm" class="space-y-3 mb-5">
+          <input id="taskTitleInput" type="text" required placeholder="ชื่องาน เช่น ส่ง Lab 3 / สอบควิซ..."
+            class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500" />
+          <div class="flex gap-2">
+            <input id="taskTimeInput" type="time" value="23:59"
+              class="px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500" />
+            <select id="taskCategoryInput" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
+              <option value="การบ้าน">การบ้าน</option>
+              <option value="สอบ/ด่วน">สอบ/ด่วน</option>
+              <option value="โปรเจกต์">โปรเจกต์</option>
+              <option value="งานกลุ่ม">งานกลุ่ม</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium cursor-pointer">
+            + เพิ่มกำหนดส่งงาน
+          </button>
+        </form>
+
+        <div id="dayTaskList" class="space-y-2.5 max-h-96 overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- แท็บ 2: คลังรูปตารางเรียนและรูปสำคัญ (บีบอัดเก็บใน Firestore ฟรี 100%) -->
+    <section id="gallerySection" class="hidden bg-white border border-slate-200 rounded-2xl p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">ตารางเรียน & รูปสำคัญ</h2>
+          <p class="text-xs text-slate-500">ย่อขนาดอัตโนมัติและซิงก์ข้ามมือถือ-คอมฟรีผ่าน Firestore</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="photoCategorySelect" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
+            <option value="ตารางเรียน">ตารางเรียน</option>
+            <option value="ตารางสอบ">ตารางสอบ</option>
+            <option value="เอกสารสำคัญ">เอกสารสำคัญ</option>
+            <option value="อื่นๆ">อื่นๆ</option>
+          </select>
+          <label class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium cursor-pointer">
+            อัปโหลดรูปภาพ
+            <input id="photoFileInput" type="file" accept="image/*" multiple class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <!-- ตัวกรองหมวดหมู่รูปภาพ -->
+      <div id="galleryFilterBar" class="flex flex-wrap gap-1.5 mb-5">
+        <button data-filter="ทั้งหมด" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-indigo-600 text-white cursor-pointer">ทั้งหมด</button>
+        <button data-filter="ตารางเรียน" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">ตารางเรียน</button>
+        <button data-filter="ตารางสอบ" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">ตารางสอบ</button>
+        <button data-filter="เอกสารสำคัญ" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">เอกสารสำคัญ</button>
+        <button data-filter="อื่นๆ" class="filter-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">อื่นๆ</button>
+      </div>
+
+      <p id="uploadStatus" class="text-xs text-indigo-600 mb-4 hidden"></p>
+      <div id="galleryGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    </section>
+  </div>
+
+  <!-- Modal ดูรูปขนาดใหญ่พร้อมซูม -->
+  <div id="photoModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 gap-2">
+        <span id="modalPhotoTitle" class="text-sm font-medium text-slate-800 truncate"></span>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="toggleZoomBtn" class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-medium cursor-pointer">ซูมขยาย</button>
+          <button id="closeModalBtn" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-medium cursor-pointer">ปิด</button>
+        </div>
+      </div>
+      <div id="modalImgContainer" class="p-4 bg-slate-900 flex items-center justify-center max-h-[78vh] overflow-auto">
+        <img id="modalPhotoImg" src="" alt="" class="max-w-full max-h-[72vh] object-contain rounded-lg transition-transform duration-200" />
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+      onSnapshot, query, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFKH6BLdL08Gxwd7S2FTdZFbX0vs50a0E",
+      authDomain: "studyplasway.firebaseapp.com",
+      projectId: "studyplasway",
+      storageBucket: "studyplasway.firebasestorage.app",
+      messagingSenderId: "286952046062",
+      appId: "1:286952046062:web:d62120bc808824b2c9a2ff",
+      measurementId: "G-10JGN9E5R8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+    let selectedDateStr = formatDateKey(new Date());
+    let allTasks = [];
+    let allPhotos = [];
+    let currentGalleryFilter = "ทั้งหมด";
+    let isZoomed = false;
+    let unsubTasks = null;
+    let unsubPhotos = null;
+
+    const loginScreen = document.getElementById("loginScreen");
+    const appScreen = document.getElementById("appScreen");
+    const authError = document.getElementById("authError");
+
+    document.getElementById("googleLoginBtn").addEventListener("click", async () => {
+      authError.classList.add("hidden");
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        authError.textContent = "ล็อกอินไม่สำเร็จ: " + err.message;
+        authError.classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      if (unsubTasks) unsubTasks();
+      if (unsubPhotos) unsubPhotos();
+
+      if (user) {
+        currentUser = user;
+        loginScreen.classList.add("hidden");
+        appScreen.classList.remove("hidden");
+        document.getElementById("userEmailLabel").textContent = user.email || user.displayName;
+        subscribeUserData(user.uid);
+      } else {
+        currentUser = null;
+        allTasks = [];
+        allPhotos = [];
+        appScreen.classList.add("hidden");
+        loginScreen.classList.remove("hidden");
+      }
+    });
+
+    function subscribeUserData(uid) {
+      const tasksRef = query(collection(db, "users", uid, "tasks"), orderBy("createdAt", "desc"));
+      unsubTasks = onSnapshot(tasksRef, (snap) => {
+        allTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderCalendar();
+        renderDayTasks();
+      });
+
+      const photosRef = query(collection(db, "users", uid, "photos"), orderBy("createdAt", "desc"));
+      unsubPhotos = onSnapshot(photosRef, (snap) => {
+        allPhotos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderGallery();
+      });
+    }
+
+    // สลับแท็บ
+    const tabCalendarBtn = document.getElementById("tabCalendarBtn");
+    const tabGalleryBtn = document.getElementById("tabGalleryBtn");
+    const calendarSection = document.getElementById("calendarSection");
+    const gallerySection = document.getElementById("gallerySection");
+
+    tabCalendarBtn.addEventListener("click", () => {
+      calendarSection.classList.remove("hidden");
+      gallerySection.classList.add("hidden");
+      tabCalendarBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white cursor-pointer";
+      tabGalleryBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer";
+    });
+
+    tabGalleryBtn.addEventListener("click", () => {
+      gallerySection.classList.remove("hidden");
+      calendarSection.classList.add("hidden");
+      tabGalleryBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white cursor-pointer";
+      tabCalendarBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer";
+    });
+
+    function formatDateKey(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function renderCalendar() {
+      const monthNames = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+      document.getElementById("monthTitle").textContent = `${monthNames[currentMonth]} ${currentYear + 543}`;
+
+      const grid = document.getElementById("calendarGrid");
+      grid.innerHTML = "";
+
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const todayKey = formatDateKey(new Date());
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.appendChild(document.createElement("div"));
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const dayTasks = allTasks.filter(t => t.date === key);
+        const pendingCount = dayTasks.filter(t => !t.done).length;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const isSelected = key === selectedDateStr;
+        const isToday = key === todayKey;
+
+        btn.className = `h-16 p-1.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+          isSelected
+            ? "border-indigo-600 bg-indigo-50/70"
+            : "border-slate-100 hover:border-slate-300 bg-white"
+        }`;
+
+        btn.innerHTML = `
+          <span class="text-xs font-semibold ${isToday ? "px-1.5 py-0.5 rounded-full bg-indigo-600 text-white" : "text-slate-700"}">${day}</span>
+          ${pendingCount > 0 ? `<span class="text-[11px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-medium w-fit">${pendingCount} งาน</span>` : ""}
+        `;
+
+        btn.addEventListener("click", () => {
+          selectedDateStr = key;
+          renderCalendar();
+          renderDayTasks();
+        });
+
+        grid.appendChild(btn);
+      }
+    }
+
+    document.getElementById("prevMonthBtn").addEventListener("click", () => {
+      currentMonth--;
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonthBtn").addEventListener("click", () => {
+      currentMonth++;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      renderCalendar();
+    });
+
+    document.getElementById("todayBtn").addEventListener("click", () => {
+      const now = new Date();
+      currentYear = now.getFullYear();
+      currentMonth = now.getMonth();
+      selectedDateStr = formatDateKey(now);
+      renderCalendar();
+      renderDayTasks();
+    });
+
+    function renderDayTasks() {
+      document.getElementById("selectedDateLabel").textContent = `กำหนดส่งวันที่ ${selectedDateStr}`;
+      const list = document.getElementById("dayTaskList");
+      const dayTasks = allTasks.filter(t => t.date === selectedDateStr);
+
+      if (dayTasks.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">ยังไม่มีกำหนดส่งงานในวันนี้</p>`;
+        return;
+      }
+
+      list.innerHTML = "";
+      dayTasks.forEach(task => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-2 p-3 rounded-xl border border-slate-100 bg-slate-50/70";
+        row.innerHTML = `
+          <div class="flex items-start gap-2.5 min-w-0">
+            <input type="checkbox" ${task.done ? "checked" : ""} class="mt-1 accent-indigo-600 cursor-pointer" />
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate ${task.done ? "line-through text-slate-400" : "text-slate-800"}">${escapeHtml(task.title)}</p>
+              <p class="text-xs text-slate-500">${task.time || "23:59"} · ${escapeHtml(task.category || "การบ้าน")}</p>
+            </div>
+          </div>
+          <button class="text-xs text-rose-500 hover:underline shrink-0 cursor-pointer">ลบ</button>
+        `;
+
+        const checkbox = row.querySelector("input[type='checkbox']");
+        checkbox.addEventListener("change", async () => {
+          if (!currentUser) return;
+          await updateDoc(doc(db, "users", currentUser.uid, "tasks", task.id), { done: checkbox.checked });
+        });
+
+        const delBtn = row.querySelector("button");
+        delBtn.addEventListener("click", async () => {
+          if (!currentUser) return;
+          await deleteDoc(doc(db, "users", currentUser.uid, "tasks", task.id));
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    document.getElementById("taskForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      const titleInput = document.getElementById("taskTitleInput");
+      const timeInput = document.getElementById("taskTimeInput");
+      const catInput = document.getElementById("taskCategoryInput");
+
+      const title = titleInput.value.trim();
+      if (!title) return;
+
+      await addDoc(collection(db, "users", currentUser.uid, "tasks"), {
+        title,
+        date: selectedDateStr,
+        time: timeInput.value || "23:59",
+        category: catInput.value,
+        done: false,
+        createdAt: serverTimestamp()
+      });
+
+      titleInput.value = "";
+    });
+
+    // ฟังก์ชันย่อขนาดและบีบอัดรูปให้อยู่ในขีดจำกัด Firestore (ไม่เกิน ~650 KB ต่อรูป)
+    function compressImageToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("อ่านไฟล์รูปภาพไม่สำเร็จ"));
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("ไฟล์รูปภาพไม่ถูกต้อง"));
+          img.onload = () => {
+            let maxDim = 1400;
+            let quality = 0.82;
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            const renderAttempt = () => {
+              let w = img.width;
+              let h = img.height;
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              return canvas.toDataURL("image/jpeg", quality);
+            };
+
+            let dataUrl = renderAttempt();
+            // ลดขนาด/คุณภาพอัตโนมัติถ้าไฟล์ยังใหญ่เกินไปสำหรับ Firestore (1MB limit)
+            while (dataUrl.length > 680000 && (quality > 0.45 || maxDim > 800)) {
+              if (quality > 0.5) {
+                quality -= 0.12;
+              } else {
+                maxDim = Math.round(maxDim * 0.8);
+              }
+              dataUrl = renderAttempt();
+            }
+
+            if (dataUrl.length > 900000) {
+              reject(new Error("รูปภาพมีรายละเอียดสูงเกินไป กรุณาครอปหรือลดขนาดรูปก่อนอัปโหลด"));
+            } else {
+              resolve(dataUrl);
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // อัปโหลดรูปภาพ (บีบอัดและบันทึกลง Firestore โดยตรง)
+    const photoFileInput = document.getElementById("photoFileInput");
+    const uploadStatus = document.getElementById("uploadStatus");
+
+    photoFileInput.addEventListener("change", async () => {
+      if (!currentUser || !photoFileInput.files.length) return;
+      const category = document.getElementById("photoCategorySelect").value;
+      const files = Array.from(photoFileInput.files);
+
+      uploadStatus.classList.remove("hidden");
+      uploadStatus.textContent = `กำลังบีบอัดและบันทึก ${files.length} รูปภาพ...`;
+
+      try {
+        for (const file of files) {
+          const dataUrl = await compressImageToDataUrl(file);
+          await addDoc(collection(db, "users", currentUser.uid, "photos"), {
+            name: file.name,
+            category,
+            dataUrl,
+            createdAt: serverTimestamp()
+          });
+        }
+        uploadStatus.textContent = "บันทึกรูปภาพเรียบร้อยแล้ว (ซิงก์ทุกอุปกรณ์อัตโนมัติ)";
+        setTimeout(() => uploadStatus.classList.add("hidden"), 3000);
+      } catch (err) {
+        uploadStatus.textContent = "อัปโหลดไม่สำเร็จ: " + err.message;
+      } finally {
+        photoFileInput.value = "";
+      }
+    });
+
+    // ตัวกรองหมวดหมู่ในแกลเลอรี
+    document.querySelectorAll(".filter-chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentGalleryFilter = btn.dataset.filter;
+        document.querySelectorAll(".filter-chip").forEach(b => {
+          b.className = b.dataset.filter === currentGalleryFilter
+            ? "filter-chip px-3 py-1 rounded-full text-xs font-medium bg-indigo-600 text-white cursor-pointer"
+            : "filter-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer";
+        });
+        renderGallery();
+      });
+    });
+
+    function renderGallery() {
+      const grid = document.getElementById("galleryGrid");
+      const filtered = currentGalleryFilter === "ทั้งหมด"
+        ? allPhotos
+        : allPhotos.filter(p => p.category === currentGalleryFilter);
+
+      if (!filtered.length) {
+        grid.innerHTML = `<p class="text-sm text-slate-400 col-span-full text-center py-10">ยังไม่มีรูปภาพในหมวดหมู่นี้</p>`;
+        return;
+      }
+
+      grid.innerHTML = "";
+      filtered.forEach(item => {
+        const imgSrc = item.dataUrl || item.url || "";
+        const card = document.createElement("div");
+        card.className = "border border-slate-200 rounded-2xl overflow-hidden bg-white flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <img src="${imgSrc}" alt="${escapeHtml(item.name)}" class="w-full h-44 object-cover cursor-pointer" />
+            <div class="p-3">
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium">${escapeHtml(item.category || "ทั่วไป")}</span>
+              <p class="text-xs font-medium text-slate-800 mt-1.5 truncate">${escapeHtml(item.name)}</p>
+            </div>
+          </div>
+          <div class="px-3 pb-3 flex justify-end">
+            <button class="text-xs text-rose-500 hover:underline cursor-pointer">ลบรูป</button>
+          </div>
+        `;
+
+        card.querySelector("img").addEventListener("click", () => {
+          isZoomed = false;
+          const modalImg = document.getElementById("modalPhotoImg");
+          modalImg.src = imgSrc;
+          modalImg.className = "max-w-full max-h-[72vh] object-contain rounded-lg transition-transform duration-200";
+          document.getElementById("toggleZoomBtn").textContent = "ซูมขยาย";
+          document.getElementById("modalPhotoTitle").textContent = `${item.category || ""} - ${item.name}`;
+          document.getElementById("photoModal").classList.remove("hidden");
+        });
+
+        card.querySelector("button").addEventListener("click", async () => {
+          if (!currentUser) return;
+          await deleteDoc(doc(db, "users", currentUser.uid, "photos", item.id));
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    document.getElementById("toggleZoomBtn").addEventListener("click", () => {
+      const modalImg = document.getElementById("modalPhotoImg");
+      const zoomBtn = document.getElementById("toggleZoomBtn");
+      isZoomed = !isZoomed;
+      if (isZoomed) {
+        modalImg.className = "max-w-none w-[160%] object-contain rounded-lg transition-transform duration-200";
+        zoomBtn.textContent = "ย่อพอดีจอ";
+      } else {
+        modalImg.className = "max-w-full max-h-[72vh] object-contain rounded-lg transition-transform duration-200";
+        zoomBtn.textContent = "ซูมขยาย";
+      }
+    });
+
+    document.getElementById("closeModalBtn").addEventListener("click", () => {
+      document.getElementById("photoModal").classList.add("hidden");
+    });
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+  </script>
+</body>
+</html>
