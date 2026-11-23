@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StudyPlan Cloud - ปฏิทินส่งงาน & คลังรูปสำคัญ</title>
+  <title>StudyPlan - ปฏิทินส่งงาน & คลังรูปสำคัญ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,33 +14,14 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-  <!-- หน้าจอ Login -->
-  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center">
-      <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl font-bold mb-4">
-        SP
-      </div>
-      <h1 class="text-2xl font-bold text-slate-900">StudyPlan Cloud</h1>
-      <p class="text-sm text-slate-500 mt-2">
-        ล็อกอินด้วย Google เพื่อซิงก์กำหนดส่งงาน ตารางเรียน และรูปสำคัญข้ามมือถือกับคอมพิวเตอร์
-      </p>
-      <button id="googleLoginBtn"
-        class="mt-6 w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition flex items-center justify-center gap-2 cursor-pointer">
-        <span>เข้าสู่ระบบด้วย Google</span>
-      </button>
-      <p id="authError" class="text-xs text-rose-600 mt-3 hidden"></p>
-    </div>
-  </div>
-
-  <!-- หน้าแอปหลัก (แสดงหลัง Login สำเร็จ) -->
-  <div id="appScreen" class="hidden max-w-6xl mx-auto px-4 py-6">
+  <div id="appScreen" class="max-w-6xl mx-auto px-4 py-6">
     <!-- Top Bar -->
     <header class="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 mb-6">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">SP</div>
         <div>
-          <h1 class="font-bold text-lg text-slate-900">StudyPlan Cloud</h1>
-          <p id="userEmailLabel" class="text-xs text-slate-500"></p>
+          <h1 class="font-bold text-lg text-slate-900">StudyPlan</h1>
+          <p class="text-xs text-slate-500">ปฏิทินกำหนดส่งงาน ตารางเรียน และรูปสำคัญ</p>
         </div>
       </div>
 
@@ -50,9 +31,6 @@
         </button>
         <button id="tabGalleryBtn" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
           ตารางเรียน & รูปสำคัญ
-        </button>
-        <button id="logoutBtn" class="px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 cursor-pointer">
-          ออกจากระบบ
         </button>
       </div>
     </header>
@@ -101,12 +79,12 @@
       </div>
     </section>
 
-    <!-- แท็บ 2: คลังรูปตารางเรียนและรูปสำคัญ (บีบอัดเก็บใน Firestore ฟรี 100%) -->
+    <!-- แท็บ 2: คลังรูปตารางเรียนและรูปสำคัญ -->
     <section id="gallerySection" class="hidden bg-white border border-slate-200 rounded-2xl p-5">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h2 class="text-lg font-bold text-slate-900">ตารางเรียน & รูปสำคัญ</h2>
-          <p class="text-xs text-slate-500">ย่อขนาดอัตโนมัติและซิงก์ข้ามมือถือ-คอมฟรีผ่าน Firestore</p>
+          <p class="text-xs text-slate-500">เก็บและย่อขนาดรูปอัตโนมัติในเบราว์เซอร์ที่เปิดใช้งาน</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <select id="photoCategorySelect" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
@@ -152,90 +130,37 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-      onSnapshot, query, orderBy, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <script>
+    const TASKS_STORAGE_KEY = "studyplan_tasks_v1";
+    const PHOTOS_STORAGE_KEY = "studyplan_photos_v1";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBFKH6BLdL08Gxwd7S2FTdZFbX0vs50a0E",
-      authDomain: "studyplasway.firebaseapp.com",
-      projectId: "studyplasway",
-      storageBucket: "studyplasway.firebasestorage.app",
-      messagingSenderId: "286952046062",
-      appId: "1:286952046062:web:d62120bc808824b2c9a2ff",
-      measurementId: "G-10JGN9E5R8"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-
-    let currentUser = null;
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();
     let selectedDateStr = formatDateKey(new Date());
-    let allTasks = [];
-    let allPhotos = [];
+    let allTasks = loadJson(TASKS_STORAGE_KEY, []);
+    let allPhotos = loadJson(PHOTOS_STORAGE_KEY, []);
     let currentGalleryFilter = "ทั้งหมด";
     let isZoomed = false;
-    let unsubTasks = null;
-    let unsubPhotos = null;
 
-    const loginScreen = document.getElementById("loginScreen");
-    const appScreen = document.getElementById("appScreen");
-    const authError = document.getElementById("authError");
-
-    document.getElementById("googleLoginBtn").addEventListener("click", async () => {
-      authError.classList.add("hidden");
+    function loadJson(key, fallback) {
       try {
-        await signInWithPopup(auth, provider);
-      } catch (err) {
-        authError.textContent = "ล็อกอินไม่สำเร็จ: " + err.message;
-        authError.classList.remove("hidden");
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (_) {
+        return fallback;
       }
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-
-    onAuthStateChanged(auth, (user) => {
-      if (unsubTasks) unsubTasks();
-      if (unsubPhotos) unsubPhotos();
-
-      if (user) {
-        currentUser = user;
-        loginScreen.classList.add("hidden");
-        appScreen.classList.remove("hidden");
-        document.getElementById("userEmailLabel").textContent = user.email || user.displayName;
-        subscribeUserData(user.uid);
-      } else {
-        currentUser = null;
-        allTasks = [];
-        allPhotos = [];
-        appScreen.classList.add("hidden");
-        loginScreen.classList.remove("hidden");
-      }
-    });
-
-    function subscribeUserData(uid) {
-      const tasksRef = query(collection(db, "users", uid, "tasks"), orderBy("createdAt", "desc"));
-      unsubTasks = onSnapshot(tasksRef, (snap) => {
-        allTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderCalendar();
-        renderDayTasks();
-      });
-
-      const photosRef = query(collection(db, "users", uid, "photos"), orderBy("createdAt", "desc"));
-      unsubPhotos = onSnapshot(photosRef, (snap) => {
-        allPhotos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderGallery();
-      });
     }
 
+    function saveJson(key, data) {
+      try {
+        localStorage.setItem(key, JSON.stringify(data));
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // สลับแท็บ
     const tabCalendarBtn = document.getElementById("tabCalendarBtn");
     const tabGalleryBtn = document.getElementById("tabGalleryBtn");
     const calendarSection = document.getElementById("calendarSection");
@@ -358,24 +283,27 @@
         `;
 
         const checkbox = row.querySelector("input[type='checkbox']");
-        checkbox.addEventListener("change", async () => {
-          if (!currentUser) return;
-          await updateDoc(doc(db, "users", currentUser.uid, "tasks", task.id), { done: checkbox.checked });
+        checkbox.addEventListener("change", () => {
+          allTasks = allTasks.map(t => t.id === task.id ? { ...t, done: checkbox.checked } : t);
+          saveJson(TASKS_STORAGE_KEY, allTasks);
+          renderCalendar();
+          renderDayTasks();
         });
 
         const delBtn = row.querySelector("button");
-        delBtn.addEventListener("click", async () => {
-          if (!currentUser) return;
-          await deleteDoc(doc(db, "users", currentUser.uid, "tasks", task.id));
+        delBtn.addEventListener("click", () => {
+          allTasks = allTasks.filter(t => t.id !== task.id);
+          saveJson(TASKS_STORAGE_KEY, allTasks);
+          renderCalendar();
+          renderDayTasks();
         });
 
         list.appendChild(row);
       });
     }
 
-    document.getElementById("taskForm").addEventListener("submit", async (e) => {
+    document.getElementById("taskForm").addEventListener("submit", (e) => {
       e.preventDefault();
-      if (!currentUser) return;
       const titleInput = document.getElementById("taskTitleInput");
       const timeInput = document.getElementById("taskTimeInput");
       const catInput = document.getElementById("taskCategoryInput");
@@ -383,16 +311,19 @@
       const title = titleInput.value.trim();
       if (!title) return;
 
-      await addDoc(collection(db, "users", currentUser.uid, "tasks"), {
+      allTasks.unshift({
+        id: String(Date.now()) + "_" + Math.random().toString(36).slice(2, 7),
         title,
         date: selectedDateStr,
         time: timeInput.value || "23:59",
         category: catInput.value,
-        done: false,
-        createdAt: serverTimestamp()
+        done: false
       });
 
+      saveJson(TASKS_STORAGE_KEY, allTasks);
       titleInput.value = "";
+      renderCalendar();
+      renderDayTasks();
     });
 
     function compressImageToDataUrl(file) {
@@ -403,8 +334,8 @@
           const img = new Image();
           img.onerror = () => reject(new Error("ไฟล์รูปภาพไม่ถูกต้อง"));
           img.onload = () => {
-            let maxDim = 1400;
-            let quality = 0.82;
+            let maxDim = 1200;
+            let quality = 0.78;
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
 
@@ -429,8 +360,8 @@
             };
 
             let dataUrl = renderAttempt();
-            while (dataUrl.length > 680000 && (quality > 0.45 || maxDim > 800)) {
-              if (quality > 0.5) {
+            while (dataUrl.length > 450000 && (quality > 0.4 || maxDim > 700)) {
+              if (quality > 0.45) {
                 quality -= 0.12;
               } else {
                 maxDim = Math.round(maxDim * 0.8);
@@ -438,11 +369,7 @@
               dataUrl = renderAttempt();
             }
 
-            if (dataUrl.length > 900000) {
-              reject(new Error("รูปภาพมีรายละเอียดสูงเกินไป กรุณาครอปหรือลดขนาดรูปก่อนอัปโหลด"));
-            } else {
-              resolve(dataUrl);
-            }
+            resolve(dataUrl);
           };
           img.src = e.target.result;
         };
@@ -454,27 +381,33 @@
     const uploadStatus = document.getElementById("uploadStatus");
 
     photoFileInput.addEventListener("change", async () => {
-      if (!currentUser || !photoFileInput.files.length) return;
+      if (!photoFileInput.files.length) return;
       const category = document.getElementById("photoCategorySelect").value;
       const files = Array.from(photoFileInput.files);
 
       uploadStatus.classList.remove("hidden");
-      uploadStatus.textContent = `กำลังบีบอัดและบันทึก ${files.length} รูปภาพ...`;
+      uploadStatus.textContent = `กำลังบีบอัดและบันทึกรูปภาพ ${files.length} ไฟล์...`;
 
       try {
         for (const file of files) {
           const dataUrl = await compressImageToDataUrl(file);
-          await addDoc(collection(db, "users", currentUser.uid, "photos"), {
+          const nextPhotos = [{
+            id: String(Date.now()) + "_" + Math.random().toString(36).slice(2, 7),
             name: file.name,
             category,
-            dataUrl,
-            createdAt: serverTimestamp()
-          });
+            dataUrl
+          }, ...allPhotos];
+
+          if (!saveJson(PHOTOS_STORAGE_KEY, nextPhotos)) {
+            throw new Error("พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็ม ลบรูปเก่าออกบางส่วนก่อนครับ");
+          }
+          allPhotos = nextPhotos;
         }
-        uploadStatus.textContent = "บันทึกรูปภาพเรียบร้อยแล้ว (ซิงก์ทุกอุปกรณ์อัตโนมัติ)";
-        setTimeout(() => uploadStatus.classList.add("hidden"), 3000);
+        renderGallery();
+        uploadStatus.textContent = "บันทึกรูปภาพเรียบร้อยแล้ว";
+        setTimeout(() => uploadStatus.classList.add("hidden"), 2500);
       } catch (err) {
-        uploadStatus.textContent = "อัปโหลดไม่สำเร็จ: " + err.message;
+        uploadStatus.textContent = "บันทึกไม่สำเร็จ: " + err.message;
       } finally {
         photoFileInput.value = "";
       }
@@ -505,12 +438,11 @@
 
       grid.innerHTML = "";
       filtered.forEach(item => {
-        const imgSrc = item.dataUrl || item.url || "";
         const card = document.createElement("div");
         card.className = "border border-slate-200 rounded-2xl overflow-hidden bg-white flex flex-col justify-between";
         card.innerHTML = `
           <div>
-            <img src="${imgSrc}" alt="${escapeHtml(item.name)}" class="w-full h-44 object-cover cursor-pointer" />
+            <img src="${item.dataUrl}" alt="${escapeHtml(item.name)}" class="w-full h-44 object-cover cursor-pointer" />
             <div class="p-3">
               <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium">${escapeHtml(item.category || "ทั่วไป")}</span>
               <p class="text-xs font-medium text-slate-800 mt-1.5 truncate">${escapeHtml(item.name)}</p>
@@ -524,16 +456,17 @@
         card.querySelector("img").addEventListener("click", () => {
           isZoomed = false;
           const modalImg = document.getElementById("modalPhotoImg");
-          modalImg.src = imgSrc;
+          modalImg.src = item.dataUrl;
           modalImg.className = "max-w-full max-h-[72vh] object-contain rounded-lg transition-transform duration-200";
           document.getElementById("toggleZoomBtn").textContent = "ซูมขยาย";
           document.getElementById("modalPhotoTitle").textContent = `${item.category || ""} - ${item.name}`;
           document.getElementById("photoModal").classList.remove("hidden");
         });
 
-        card.querySelector("button").addEventListener("click", async () => {
-          if (!currentUser) return;
-          await deleteDoc(doc(db, "users", currentUser.uid, "photos", item.id));
+        card.querySelector("button").addEventListener("click", () => {
+          allPhotos = allPhotos.filter(p => p.id !== item.id);
+          saveJson(PHOTOS_STORAGE_KEY, allPhotos);
+          renderGallery();
         });
 
         grid.appendChild(card);
@@ -562,6 +495,10 @@
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
       }[s]));
     }
+
+    renderCalendar();
+    renderDayTasks();
+    renderGallery();
   </script>
 </body>
 </html>
